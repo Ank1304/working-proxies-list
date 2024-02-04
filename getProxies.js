@@ -67,8 +67,14 @@ const fetchAndStoreProxies = async () => {
 // Function to test a proxy using proxy-verifier
 const testProxy = async (ip, port) => {
   const proxyUrl = `http://${ip}:${port}`;
+  
+var proxy = {
+	ipAddress: ip,
+	port: port,
+	protocol: 'http'
+};
   return new Promise((resolve, reject) => {
-    ProxyVerifier.test(proxyUrl, (err, result) => {
+    ProxyVerifier.test(proxy, (err, result) => {
       if (err) {
         reject(err);
       } else {
