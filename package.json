@@ -1,0 +1,16 @@
+{
+  "name": "proxy-scraper",
+  "version": "1.0.0",
+  "description": "Node.js application to scrape and test proxies",
+  "main": "getProxies.js",
+  "scripts": {
+    "start": "node getProxies.js"
+  },
+  "author": "Ankit Sharma,
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.24.0",
+    "express": "^4.17.3",
+    "pg": "^8.7.1"
+  }
+}
