@@ -35,11 +35,10 @@ const fetchAndStoreProxies = async () => {
 
     // Test and prepare proxy servers
     const proxyAddresses = proxyServers.map(proxy => proxy.trim()); // Remove leading/trailing whitespace and carriage return characters
-    console.log(proxyAddresses, 'address')
     const proxycheck = new ProxyChecker(proxyAddresses);
-    console.log(proxycheck, "proxycheck");
     // Check all proxies
     const result = await proxycheck.checkAllProxies();
+    console.log(result, 'rsly')
     const validProxies = result.filter(proxy => proxy.status === 'success').map(proxy => `${proxy.protocol}://${proxy.host}:${proxy.port}`);
 
     console.log('Valid proxy addresses:', validProxies); // Log the valid proxy addresses
