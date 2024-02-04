@@ -38,7 +38,7 @@ const fetchAndStoreProxies = async () => {
       const [ip, port] = proxy.split(':');
       const isProxyWorking = await testProxy(ip, port);
       if (isProxyWorking) {
-        validProxies.push(proxy);
+        validProxies.push(proxy.trim()); // Remove leading/trailing whitespace and carriage return characters
         if (validProxies.length === 20) {
           break; // Stop fetching proxies when count reaches 20
         }
@@ -60,7 +60,6 @@ const fetchAndStoreProxies = async () => {
     console.error('Error updating proxy servers:', error);
   }
 };
-
 // Function to test a proxy
 const testProxy = async (ip, port) => {
   try {
