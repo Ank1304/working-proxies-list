@@ -18,7 +18,7 @@ const pool = new Pool({
 pool.query(`
   CREATE TABLE IF NOT EXISTS proxy_servers (
     id SERIAL PRIMARY KEY,
-    proxy_address TEXT
+    proxy_addresses TEXT[]
   )
 `);
 
@@ -45,17 +45,14 @@ const fetchAndStoreProxies = async () => {
       }
     }
 
-    // Prepare comma-separated list of proxy addresses
-    const proxyAddresses = validProxies.join(',');
-
-    console.log('Proxy addresses:', proxyAddresses); // Log the proxy addresses
+    console.log('Proxy addresses:', validProxies); // Log the proxy addresses
 
     // Clear previous entries
     const deleteResult = await pool.query('DELETE FROM proxy_servers');
     console.log('Deleted old entries:', deleteResult.rowCount); // Log the number of deleted entries
 
-    // Insert proxy addresses into the table
-    const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_address) VALUES ($1)', [proxyAddresses]);
+    // Insert proxy addresses into the table as an array
+    const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_addresses) VALUES ($1)', [validProxies]);
     console.log('Inserted new entries:', insertResult.rowCount); // Log the number of inserted entries
 
     console.log('Proxy servers updated successfully.');
