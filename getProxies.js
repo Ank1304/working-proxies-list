@@ -48,11 +48,15 @@ const fetchAndStoreProxies = async () => {
     // Prepare comma-separated list of proxy addresses
     const proxyAddresses = validProxies.join(',');
 
+    console.log('Proxy addresses:', proxyAddresses); // Log the proxy addresses
+
     // Clear previous entries
-    await pool.query('DELETE FROM proxy_servers');
+    const deleteResult = await pool.query('DELETE FROM proxy_servers');
+    console.log('Deleted old entries:', deleteResult.rowCount); // Log the number of deleted entries
 
     // Insert proxy addresses into the table
-    await pool.query('INSERT INTO proxy_servers (proxy_address) VALUES ($1)', [proxyAddresses]);
+    const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_address) VALUES ($1)', [proxyAddresses]);
+    console.log('Inserted new entries:', insertResult.rowCount); // Log the number of inserted entries
 
     console.log('Proxy servers updated successfully.');
   } catch (error) {
