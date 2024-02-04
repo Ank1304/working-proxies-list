@@ -67,14 +67,14 @@ const fetchAndStoreProxies = async () => {
 // Function to test a proxy using proxy-verifier
 const testProxy = async (ip, port) => {
   const proxyUrl = `http://${ip}:${port}`;
-  
-var proxy = {
-	ipAddress: ip,
-	port: port,
-	protocol: 'http'
-};
+  const options = {
+    testUrl: 'https://example.com', // URL to test proxy against
+    proxy: proxyUrl, // Proxy to be tested
+    timeout: 5000, // Request timeout in milliseconds (adjust as needed)
+    verbose: true // Optional: Set to true to log additional information
+  };
   return new Promise((resolve, reject) => {
-    ProxyVerifier.test(proxy, (err, result) => {
+    ProxyVerifier.test(options, (err, result) => {
       if (err) {
         reject(err);
       } else {
