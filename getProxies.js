@@ -37,7 +37,7 @@ const fetchAndStoreProxies = async () => {
     const proxyAddresses = proxyServers.map(proxy => proxy.trim()); // Remove leading/trailing whitespace and carriage return characters
     console.log(proxyAddresses, 'address')
     const proxycheck = new ProxyChecker(proxyAddresses);
-
+    console.log(proxycheck, "proxycheck");
     // Check all proxies
     const result = await proxycheck.checkAllProxies();
     const validProxies = result.filter(proxy => proxy.status === 'success').map(proxy => `${proxy.protocol}://${proxy.host}:${proxy.port}`);
