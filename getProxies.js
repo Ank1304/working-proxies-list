@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { Pool } = require('pg');
 const express = require('express');
-const ProxyVerifier = require('proxy-verifier');
+const ProxyChecker = require('proxy-checker-advanced');
 
 // PostgreSQL connection configuration
 const pool = new Pool({
@@ -34,25 +34,20 @@ const fetchAndStoreProxies = async () => {
     const proxyServers = response.data.split('\n'); // Split by newline to get individual IP:port pairs
 
     // Test and prepare proxy servers
-    const validProxies = [];
-    for (const proxy of proxyServers) {
-      const [ip, port] = proxy.split(':');
-      const isProxyWorking = await testProxy(ip, port);
-      if (isProxyWorking) {
-        validProxies.push(proxy.trim()); // Remove leading/trailing whitespace and carriage return characters
-        if (validProxies.length === 20) {
-          break; // Stop fetching proxies when count reaches 20
-        }
-      }
-    }
+    const proxyAddresses = proxyServers.map(proxy => proxy.trim()); // Remove leading/trailing whitespace and carriage return characters
+    const proxycheck = new ProxyChecker(proxyAddresses);
 
-    console.log('Proxy addresses:', validProxies); // Log the proxy addresses
+    // Check all proxies
+    const result = await proxycheck.checkAllProxies();
+    const validProxies = result.filter(proxy => proxy.status === 'success').map(proxy => `${proxy.protocol}://${proxy.host}:${proxy.port}`);
+
+    console.log('Valid proxy addresses:', validProxies); // Log the valid proxy addresses
 
     // Clear previous entries
     const deleteResult = await pool.query('DELETE FROM proxy_servers');
     console.log('Deleted old entries:', deleteResult.rowCount); // Log the number of deleted entries
 
-    // Insert proxy addresses into the table
+    // Insert valid proxy addresses into the table
     for (const proxy of validProxies) {
       const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_address) VALUES ($1)', [proxy]);
       console.log('Inserted new entry:', insertResult.rowCount); // Log the number of inserted entries
@@ -62,26 +57,6 @@ const fetchAndStoreProxies = async () => {
   } catch (error) {
     console.error('Error updating proxy servers:', error);
   }
-};
-
-// Function to test a proxy using proxy-verifier
-const testProxy = async (ip, port) => {
-  const proxyUrl = `http://${ip}:${port}`;
-  const options = {
-    testUrl: 'https://example.com', // URL to test proxy against
-    proxy: proxyUrl, // Proxy to be tested
-    timeout: 5000, // Request timeout in milliseconds (adjust as needed)
-    verbose: true // Optional: Set to true to log additional information
-  };
-  return new Promise((resolve, reject) => {
-    ProxyVerifier.test(options, (err, result) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(result && result.ok);
-      }
-    });
-  });
 };
 
 // Endpoint to trigger proxy update
