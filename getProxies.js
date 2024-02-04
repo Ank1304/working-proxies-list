@@ -35,6 +35,7 @@ const fetchAndStoreProxies = async () => {
 
     // Test and prepare proxy servers
     const proxyAddresses = proxyServers.map(proxy => proxy.trim()); // Remove leading/trailing whitespace and carriage return characters
+    console.log(proxyAddresses, 'address')
     const proxycheck = new ProxyChecker(proxyAddresses);
 
     // Check all proxies
