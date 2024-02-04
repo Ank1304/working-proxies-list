@@ -39,6 +39,9 @@ const fetchAndStoreProxies = async () => {
       const isProxyWorking = await testProxy(ip, port);
       if (isProxyWorking) {
         validProxies.push(proxy);
+        if (validProxies.length === 20) {
+          break; // Stop fetching proxies when count reaches 20
+        }
       }
     }
 
