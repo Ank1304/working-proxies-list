@@ -49,7 +49,7 @@ const fetchAndStoreProxies = async () => {
 
     // Insert valid proxy addresses into the table
     for (const proxy of validProxies) {
-      const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_address) VALUES ($1)', [proxy]);
+      const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_addresses) VALUES ($1)', [proxy]);
       console.log('Inserted new entry:', insertResult.rowCount); // Log the number of inserted entries
     }
 
