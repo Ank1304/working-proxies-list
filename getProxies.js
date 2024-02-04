@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { Pool } = require('pg');
 const express = require('express');
+const ProxyVerifier = require('proxy-verifier');
 
 // PostgreSQL connection configuration
 const pool = new Pool({
@@ -18,7 +19,7 @@ const pool = new Pool({
 pool.query(`
   CREATE TABLE IF NOT EXISTS proxy_servers (
     id SERIAL PRIMARY KEY,
-    proxy_addresses TEXT[]
+    proxy_address TEXT
   )
 `);
 
@@ -51,29 +52,30 @@ const fetchAndStoreProxies = async () => {
     const deleteResult = await pool.query('DELETE FROM proxy_servers');
     console.log('Deleted old entries:', deleteResult.rowCount); // Log the number of deleted entries
 
-    // Insert proxy addresses into the table as an array
-    const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_addresses) VALUES ($1)', [validProxies]);
-    console.log('Inserted new entries:', insertResult.rowCount); // Log the number of inserted entries
+    // Insert proxy addresses into the table
+    for (const proxy of validProxies) {
+      const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_address) VALUES ($1)', [proxy]);
+      console.log('Inserted new entry:', insertResult.rowCount); // Log the number of inserted entries
+    }
 
     console.log('Proxy servers updated successfully.');
   } catch (error) {
     console.error('Error updating proxy servers:', error);
   }
 };
-// Function to test a proxy
+
+// Function to test a proxy using proxy-verifier
 const testProxy = async (ip, port) => {
-  try {
-    const response = await axios.get('https://example.com', {
-      proxy: {
-        host: ip,
-        port: port,
-      },
-      timeout: 5000, // Adjust timeout as needed
+  const proxyUrl = `http://${ip}:${port}`;
+  return new Promise((resolve, reject) => {
+    ProxyVerifier.test(proxyUrl, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result && result.ok);
+      }
     });
-    return response.status === 200;
-  } catch (error) {
-    return false;
-  }
+  });
 };
 
 // Endpoint to trigger proxy update
