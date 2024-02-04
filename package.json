@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node getProxies.js"
   },
-  "author": "Ankit Sharma,
+  "author": "Ankit Sharma",
   "license": "MIT",
   "dependencies": {
     "axios": "^0.24.0",
