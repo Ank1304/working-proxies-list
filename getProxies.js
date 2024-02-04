@@ -4,12 +4,23 @@ const express = require('express');
 
 // PostgreSQL connection configuration
 const pool = new Pool({
-  user: 'your_username',
-  host: 'your_host',
-  database: 'your_database',
-  password: 'your_password',
-  port: 5432, // Default PostgreSQL port
+  user: 'anki1304',
+  host: 'dpg-cmrhrhug1b2c73dbf74g-a.oregon-postgres.render.com',
+  database: 'tradevibes',
+  password: 'NJai9wwNo6x3pWJK3cVrtFhdMlYJ8VVM',
+  port: 5432,
+  ssl: {
+    rejectUnauthorized: false,
+  }
 });
+
+// Create proxy_servers table if it does not exist
+pool.query(`
+  CREATE TABLE IF NOT EXISTS proxy_servers (
+    id SERIAL PRIMARY KEY,
+    proxy_address TEXT
+  )
+`);
 
 // Express app
 const app = express();
@@ -21,18 +32,24 @@ const fetchAndStoreProxies = async () => {
     const response = await axios.get('https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all');
     const proxyServers = response.data.split('\n'); // Split by newline to get individual IP:port pairs
 
-    // Clear previous entries
-    await pool.query('DELETE FROM proxy_servers');
-
-    // Test and insert new proxy servers
-    const insertQuery = 'INSERT INTO proxy_servers (proxy_address) VALUES ($1)';
+    // Test and prepare proxy servers
+    const validProxies = [];
     for (const proxy of proxyServers) {
       const [ip, port] = proxy.split(':');
       const isProxyWorking = await testProxy(ip, port);
       if (isProxyWorking) {
-        await pool.query(insertQuery, [proxy]);
+        validProxies.push(proxy);
       }
     }
+
+    // Prepare comma-separated list of proxy addresses
+    const proxyAddresses = validProxies.join(',');
+
+    // Clear previous entries
+    await pool.query('DELETE FROM proxy_servers');
+
+    // Insert proxy addresses into the table
+    await pool.query('INSERT INTO proxy_servers (proxy_address) VALUES ($1)', [proxyAddresses]);
 
     console.log('Proxy servers updated successfully.');
   } catch (error) {
