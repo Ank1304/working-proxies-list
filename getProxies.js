@@ -1,7 +1,6 @@
 const axios = require('axios');
 const { Pool } = require('pg');
 const express = require('express');
-const ProxyChecker = require('proxy-checker-advanced');
 
 // PostgreSQL connection configuration
 const pool = new Pool({
@@ -16,43 +15,63 @@ const pool = new Pool({
 });
 
 // Create proxy_servers table if it does not exist
-pool.query(`
-  CREATE TABLE IF NOT EXISTS proxy_servers (
-    id SERIAL PRIMARY KEY,
-    proxy_address TEXT
-  )
-`);
+(async () => {
+  try {
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS proxy_servers (
+        id SERIAL PRIMARY KEY,
+        proxy_address TEXT
+      )
+    `;
+    await pool.query(createTableQuery);
+    console.log('Proxy servers table created or exists.');
+  } catch (error) {
+    console.error('Error creating proxy servers table:', error);
+  }
+})();
 
 // Express app
 const app = express();
 
+// Function to test a proxy
+const testProxy = async (proxy) => {
+  try {
+    const response = await axios.get('https://example.com', {
+      proxy: {
+        host: proxy.split(':')[0],
+        port: parseInt(proxy.split(':')[1]),
+      },
+      timeout: 5000,
+    });
+    return response.status === 200;
+  } catch (error) {
+    console.log(error, 'error');
+    return false;
+  }
+};
+
 // Function to fetch and store proxies
 const fetchAndStoreProxies = async () => {
   try {
-    // Fetch proxy servers from the API
     const response = await axios.get('https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all');
-    const proxyServers = response.data.split('\n'); // Split by newline to get individual IP:port pairs
+    const proxyServers = response.data.split('\n').map(proxy => proxy.trim());
 
-    // Test and prepare proxy servers
-    const proxyAddresses = proxyServers.map(proxy => proxy.trim()); // Remove leading/trailing whitespace and carriage return characters
-    const proxycheck = new ProxyChecker(proxyAddresses);
-    // Check all proxies
-    const result = await proxycheck.checkAllProxies();
-    console.log(result, 'rsly')
-    const validProxies = result.filter(proxy => proxy.status === 'success').map(proxy => `${proxy.protocol}://${proxy.host}:${proxy.port}`);
-
-    console.log('Valid proxy addresses:', validProxies); // Log the valid proxy addresses
-
-    // Clear previous entries
-    const deleteResult = await pool.query('DELETE FROM proxy_servers');
-    console.log('Deleted old entries:', deleteResult.rowCount); // Log the number of deleted entries
-
-    // Insert valid proxy addresses into the table
-    for (const proxy of validProxies) {
-      const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_addresses) VALUES ($1)', [proxy]);
-      console.log('Inserted new entry:', insertResult.rowCount); // Log the number of inserted entries
+    const validProxies = [];
+    for (const proxy of proxyServers) {
+      console.log(await testProxy(proxy), 'prd')
+      if (await testProxy(proxy)) {
+        validProxies.push(proxy);
+        if (validProxies.length === 20) {
+          break;
+        }
+      }
     }
 
+    const deleteResult = await pool.query('DELETE FROM proxy_servers');
+    console.log('Deleted old entries:', deleteResult.rowCount);
+
+      const insertResult = await pool.query('INSERT INTO proxy_servers (proxy_addresses) VALUES ($1)', [validProxies]);
+      console.log('Inserted new entry:', insertResult.rowCount);
     console.log('Proxy servers updated successfully.');
   } catch (error) {
     console.error('Error updating proxy servers:', error);
@@ -71,7 +90,7 @@ app.get('/update-proxies', async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
